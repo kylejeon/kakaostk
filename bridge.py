@@ -131,8 +131,10 @@ HELP_TEXT = """🤖 사용법
 
 📊 보유 종목 관리
 /list  보유 목록 보기
-/add 티커 수량 평단   예: /add AAPL 10 180
-/remove 티커          예: /remove AAPL
+/add 티커 수량 평단    예: /add AAPL 10 180   (수량·평단 새로 설정/덮어쓰기)
+/buy 티커 수량 가격    예: /buy AAPL 5 190    (추가매수 — 평단 자동 재계산)
+/sell 티커 수량        예: /sell AAPL 4       (일부/전량 매도 — 평단 유지)
+/remove 티커          예: /remove AAPL       (목록에서 제거)
 
 🔎 분석
 /analyze  지금 즉시 보유 종목 분석 리포트 받기
@@ -169,6 +171,22 @@ def handle_command(cfg, text):
                 tg_send(cfg, portfolio.add(parts[1], float(parts[2]), float(parts[3])))
             except ValueError:
                 tg_send(cfg, "수량/평단은 숫자여야 해요. 예: /add AAPL 10 180")
+    elif cmd == "/buy":
+        if len(parts) < 4:
+            tg_send(cfg, "형식: /buy 티커 수량 가격\n예: /buy AAPL 5 190")
+        else:
+            try:
+                tg_send(cfg, portfolio.buy(parts[1], float(parts[2]), float(parts[3])))
+            except ValueError:
+                tg_send(cfg, "수량/가격은 숫자여야 해요. 예: /buy AAPL 5 190")
+    elif cmd == "/sell":
+        if len(parts) < 3:
+            tg_send(cfg, "형식: /sell 티커 수량\n예: /sell AAPL 4")
+        else:
+            try:
+                tg_send(cfg, portfolio.sell(parts[1], float(parts[2])))
+            except ValueError:
+                tg_send(cfg, "수량은 숫자여야 해요. 예: /sell AAPL 4")
     elif cmd == "/remove":
         if len(parts) < 2:
             tg_send(cfg, "형식: /remove 티커\n예: /remove AAPL")
