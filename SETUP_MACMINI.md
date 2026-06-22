@@ -166,6 +166,24 @@ launchctl list | grep kakaostk
 기본 분석 시각(한국시간): **08:00**(전일 마감 요약)·**20:30**(프리마켓)·**22:00**(개장 직전).
 시각을 바꾸려면 `com.kakaostk.analyze.plist` 의 `StartCalendarInterval` 수정 후 재등록.
 
+### 8-5. 긴급 신호 감시기 등록 (즉시 알림)
+정규 3회 분석과 별개로, 미국장 시간(한국 17~06시)에 **10분마다 시세를 점검**해
+급락(-7%)·급등(+10%)·큰 손실(평단 -15%) 시 **즉시** 텔레그램으로 알립니다(claude 호출 없이 빠름).
+```bash
+cd ~/kakaostk
+PY=$(which python3)
+sed -e "s#__PYTHON3_PATH__#$PY#g" \
+    -e "s#__PROJECT_DIR__#$HOME/kakaostk#g" \
+    -e "s#__HOME__#$HOME#g" \
+    com.kakaostk.monitor.plist > ~/Library/LaunchAgents/com.kakaostk.monitor.plist
+
+launchctl bootout gui/$(id -u)/com.kakaostk.monitor 2>/dev/null
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.kakaostk.monitor.plist
+launchctl list | grep kakaostk
+```
+임계값은 `telegram_config.json` 의 `alert_thresholds`(intraday_drop_pct / intraday_spike_pct /
+total_loss_pct)로 조정. 같은 종목·같은 조건은 하루 1번만 알립니다(스팸 방지).
+
 ---
 
 ## 운영 / 관리 명령
@@ -187,13 +205,16 @@ launchctl list | grep kakaostk
 - `/reset` — 대화 맥락 초기화(새 세션 시작)
 - 그 외 아무 메시지 → Claude가 kakaostk 안에서 처리 후 답장 (예: "AAPL 지금 어때?")
 
-## 분석 스케줄러 관리
+## 분석 스케줄러 / 감시기 관리
 | 작업 | 명령 |
 |------|------|
-| 중지 | `launchctl bootout gui/$(id -u)/com.kakaostk.analyze` |
-| 시작 | `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.kakaostk.analyze.plist` |
-| 로그 | `tail -f ~/kakaostk/analyze.log` |
-| 수동 1회 | `cd ~/kakaostk && python3 analyze.py ondemand` |
+| 분석 중지 | `launchctl bootout gui/$(id -u)/com.kakaostk.analyze` |
+| 분석 시작 | `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.kakaostk.analyze.plist` |
+| 분석 로그 | `tail -f ~/kakaostk/analyze.log` |
+| 분석 수동 1회 | `cd ~/kakaostk && python3 analyze.py ondemand` |
+| 감시기 중지 | `launchctl bootout gui/$(id -u)/com.kakaostk.monitor` |
+| 감시기 시작 | `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.kakaostk.monitor.plist` |
+| 감시기 로그 | `tail -f ~/kakaostk/monitor.log` |
 
 ---
 

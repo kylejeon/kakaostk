@@ -107,3 +107,27 @@
 - 맥미니 git pull 후 /analyze 재실행 → 새 형식(별표 제거) 확인.
 - 스케줄러(com.kakaostk.analyze.plist) 등록해 하루 3회 자동화.
 - (선택) 리포트 길이/우선순위 표기 등 사용자 피드백 반영 튜닝.
+
+
+[2026-06-22] 추가: 긴급 신호 즉시 알림 감시기
+
+■ 요구
+- 사용자가 '긴급 신호만 즉시 알림' 선택 → 정규 3회 분석 외 별도 실시간 감시 필요.
+
+■ 만든 것
+- monitor.py             : 미국장 시간대(한국 17~06시) 10분마다 보유종목 시세 점검.
+                           claude 호출 없이 룰 기반(빠름/무료). 조건:
+                             급락 당일 -7% / 급등 +10% / 평단대비 -15%.
+                           조건 충족 시 즉시 텔레그램 알림. monitor_state.json 으로
+                           같은종목·같은조건 하루 1회만(스팸 방지). 임계값은 config 로 조정.
+- com.kakaostk.monitor.plist : StartInterval 600초(10분) launchd 등록 템플릿.
+- telegram_config.example.json : alert_thresholds 키 추가.
+- .gitignore             : monitor_state.json, monitor 로그 제외.
+- SETUP_MACMINI.md       : 8-5 감시기 등록 + 관리 명령 추가.
+
+■ 어디까지
+- 코드/문법 검증 완료. 게이팅 함수 동작 확인. 실제 알림 발송은 맥미니에서 검증 필요.
+
+■ 다음에 할 것 (맥미니)
+- git pull 후 com.kakaostk.monitor.plist 등록(SETUP 8-5).
+- 임계값(-7/+10/-15%)이 본인 성향에 맞는지 보고 alert_thresholds 조정.

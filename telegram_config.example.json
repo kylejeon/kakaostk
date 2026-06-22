@@ -7,5 +7,10 @@
   "permission_mode": "acceptEdits",
   "allowed_tools": ["Read", "Edit", "WebSearch", "WebFetch", "Task", "Bash(python3 *)"],
   "analyze_permission_mode": "bypassPermissions",
+  "alert_thresholds": {
+    "intraday_drop_pct": -7.0,
+    "intraday_spike_pct": 10.0,
+    "total_loss_pct": -15.0
+  },
   "claude_session_id": null
 }

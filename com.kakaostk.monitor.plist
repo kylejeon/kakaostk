@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  긴급 신호 감시기 (미국장 시간대에 10분마다 시세 점검 → 급락/급등/큰손실 즉시 알림).
+  monitor.py 내부에서 한국시간 17~06시만 동작하도록 게이팅하므로, 그 외 시간엔 즉시 종료됨.
+  __PLACEHOLDER__ 치환 후 ~/Library/LaunchAgents/ 로 복사. SETUP_MACMINI.md 참고.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.kakaostk.monitor</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__PYTHON3_PATH__</string>
+        <string>__PROJECT_DIR__/monitor.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__PROJECT_DIR__</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- 10분(600초)마다 실행 -->
+    <key>StartInterval</key>
+    <integer>600</integer>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:__HOME__/.local/bin</string>
+        <key>HOME</key>
+        <string>__HOME__</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>__PROJECT_DIR__/monitor.log</string>
+    <key>StandardErrorPath</key>
+    <string>__PROJECT_DIR__/monitor.error.log</string>
+</dict>
+</plist>

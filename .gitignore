@@ -3,12 +3,15 @@ telegram_config.json
 
 # 보유 종목 데이터 (개인 정보 — 기기별 보관)
 portfolio.json
+monitor_state.json
 
 # 로그
 bridge.log
 bridge.error.log
 analyze.log
 analyze.error.log
+monitor.log
+monitor.error.log
 
 # Python
 __pycache__/
