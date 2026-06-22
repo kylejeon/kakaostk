@@ -86,3 +86,24 @@
 - 확인필요: 서머타임에 따른 개장시각 변동(현재 plist는 여름 기준, 시각은 수동 조정 가능).
 - 확인필요: bridge의 'Bash(python3 *)' 권한 패턴이 실제로 market.py 호출을 허용하는지
   (안 되면 analyze는 bypass라 무관, 대화형만 영향). 맥미니에서 /analyze, 대화형 둘 다 점검.
+
+
+[2026-06-22] 첫 /analyze 엔드투엔드 성공 (맥미니 실구동)
+
+■ 결과
+- 맥미니에서 yfinance 1.4.1 설치(--user --break-system-packages) 후 /analyze 정상 동작.
+- 4개 에이전트 모두 작동 확인: 기술적(SMA/RSI 실측), 펀더멘털(yfinance), 뉴스/심리(WebSearch),
+  리스크전략(종합 매매판단). 보유 7종목(SPAX·ASTX·RGTI·IONQ·TQQQ·DRAM·QTEX) 분석 완료.
+- 웹검색이 레버리지 ETF(SPAX/ASTX), 메모리 ETF(DRAM), 양자테마주(QTEX) 정확히 식별 → 신뢰도 양호.
+
+■ 발견/수정
+- 리포트에 마크다운 별표(**)가 텔레그램에 그대로 노출됨 → analyze.py 프롬프트에
+  "별표/마크다운 금지, 이모지·줄바꿈으로 강조" 규칙 추가. 맨 위 '🚨 오늘 우선순위' 한 줄,
+  하단 '한눈 요약', 레버리지 ETF 데케이 명시 의무화.
+- analyze.py 는 매번 새 프로세스로 실행되므로 데몬 재시작 불필요 — 맥미니에서 git pull 만 하면
+  다음 /analyze 부터 새 형식 적용.
+
+■ 다음에 할 것
+- 맥미니 git pull 후 /analyze 재실행 → 새 형식(별표 제거) 확인.
+- 스케줄러(com.kakaostk.analyze.plist) 등록해 하루 3회 자동화.
+- (선택) 리포트 길이/우선순위 표기 등 사용자 피드백 반영 튜닝.
