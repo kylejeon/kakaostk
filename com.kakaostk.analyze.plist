@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  보유 종목 자동 분석 스케줄러 (하루 3회, 한국시간 기준).
+  - 08:00  한국 오전: 전일 미국장 마감 요약 & 오늘 전략
+  - 20:30  프리마켓 동향 점검
+  - 22:00  미국 개장 직전 브리핑
+  (※ 미국 서머타임 종료 시 개장이 1시간 늦어지지만, analyze.py 가 현재 시각으로
+     세션 라벨을 자동 판단하므로 시각은 필요시 본인이 조정하세요.)
+
+  __PLACEHOLDER__ 치환 후 ~/Library/LaunchAgents/ 로 복사. SETUP_MACMINI.md 참고.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.kakaostk.analyze</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__PYTHON3_PATH__</string>
+        <string>__PROJECT_DIR__/analyze.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__PROJECT_DIR__</string>
+
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict>
+            <key>Hour</key><integer>8</integer>
+            <key>Minute</key><integer>0</integer>
+        </dict>
+        <dict>
+            <key>Hour</key><integer>20</integer>
+            <key>Minute</key><integer>30</integer>
+        </dict>
+        <dict>
+            <key>Hour</key><integer>22</integer>
+            <key>Minute</key><integer>0</integer>
+        </dict>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:__HOME__/.local/bin</string>
+        <key>HOME</key>
+        <string>__HOME__</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>__PROJECT_DIR__/analyze.log</string>
+    <key>StandardErrorPath</key>
+    <string>__PROJECT_DIR__/analyze.error.log</string>
+</dict>
+</plist>

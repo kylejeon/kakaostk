@@ -26,6 +26,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+import portfolio
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(BASE_DIR, "telegram_config.json")
 API = "https://api.telegram.org/bot{token}/{method}"
@@ -85,6 +87,10 @@ def run_claude(cfg, prompt):
     cmd = [claude_bin, "-p", prompt,
            "--permission-mode", permission_mode,
            "--output-format", "json"]
+    # 대화형 질문에서도 데이터 수집(시세/웹검색/서브에이전트)이 가능하도록 허용 도구 전달
+    allowed = cfg.get("allowed_tools")
+    if allowed:
+        cmd += ["--allowedTools", ",".join(allowed)]
     if session_id:
         cmd += ["--resume", session_id]
 
@@ -121,20 +127,76 @@ def run_claude(cfg, prompt):
         return (out, session_id)
 
 
+HELP_TEXT = """🤖 사용법
+
+📊 보유 종목 관리
+/list  보유 목록 보기
+/add 티커 수량 평단   예: /add AAPL 10 180
+/remove 티커          예: /remove AAPL
+
+🔎 분석
+/analyze  지금 즉시 보유 종목 분석 리포트 받기
+(자동: 하루 3회 — 한국 오전 / 프리마켓 / 개장 직전)
+
+⚙️ 기타
+/ping   살아있는지 확인
+/reset  대화 맥락 초기화
+/help   이 도움말
+
+그 외 아무 메시지나 보내면 Claude가 답합니다 (예: "AAPL 지금 어때?")"""
+
+
+def handle_command(cfg, text):
+    """슬래시 명령 처리. 처리했으면 True 반환."""
+    parts = text.split()
+    cmd = parts[0].lower()
+
+    if cmd == "/ping":
+        tg_send(cfg, "🟢 살아있어요. (맥미니 24시간 가동 중)")
+    elif cmd in ("/help", "/start"):
+        tg_send(cfg, HELP_TEXT)
+    elif cmd == "/reset":
+        cfg["claude_session_id"] = None
+        save_config(cfg)
+        tg_send(cfg, "🔄 대화 세션을 초기화했어요. 새로 시작합니다.")
+    elif cmd == "/list":
+        tg_send(cfg, portfolio.format_list())
+    elif cmd == "/add":
+        if len(parts) < 4:
+            tg_send(cfg, "형식: /add 티커 수량 평단\n예: /add AAPL 10 180")
+        else:
+            try:
+                tg_send(cfg, portfolio.add(parts[1], float(parts[2]), float(parts[3])))
+            except ValueError:
+                tg_send(cfg, "수량/평단은 숫자여야 해요. 예: /add AAPL 10 180")
+    elif cmd == "/remove":
+        if len(parts) < 2:
+            tg_send(cfg, "형식: /remove 티커\n예: /remove AAPL")
+        else:
+            tg_send(cfg, portfolio.remove(parts[1]))
+    elif cmd == "/analyze":
+        if not portfolio.load().get("positions"):
+            tg_send(cfg, "📭 보유 종목이 없어요. 먼저 /add 로 등록하세요.")
+        else:
+            tg_send(cfg, "🔍 분석을 시작했어요. 잠시 후(최대 몇 분) 리포트가 도착합니다.")
+            # 분석은 오래 걸리므로 별도 프로세스로 실행(폴링 루프를 막지 않음)
+            py = sys.executable or "python3"
+            subprocess.Popen([py, os.path.join(BASE_DIR, "analyze.py"), "ondemand"],
+                             cwd=cfg.get("project_dir", BASE_DIR))
+    else:
+        return False
+    return True
+
+
 def handle_message(cfg, text):
     text = (text or "").strip()
     if not text:
         return
 
-    # 특수 명령
-    if text == "/ping":
-        tg_send(cfg, "🟢 살아있어요. (맥미니 24시간 가동 중)")
-        return
-    if text == "/reset":
-        cfg["claude_session_id"] = None
-        save_config(cfg)
-        tg_send(cfg, "🔄 대화 세션을 초기화했어요. 새로 시작합니다.")
-        return
+    if text.startswith("/"):
+        if handle_command(cfg, text):
+            return  # 명령 처리 완료
+        # 알 수 없는 명령이면 아래 Claude 패스스루로 진행
 
     tg_send(cfg, "🤔 처리 중...")
     result, new_sid = run_claude(cfg, text)

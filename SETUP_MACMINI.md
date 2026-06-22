@@ -126,6 +126,46 @@ tail -f ~/kakaostk/bridge.log       # 로그 실시간 보기
 - (선택) 자동 로그인 켜기: 재부팅 후 사용자 로그인 없이도 LaunchAgent가 키체인에 접근하려면
   자동 로그인이 편합니다. **시스템 설정 → 사용자 및 그룹 → 자동 로그인**.
 
+## 8. 주식 분석 에이전트 + 스케줄러 (선택, 핵심 기능)
+보유 미국주식을 하루 3번 자동 분석해 텔레그램으로 받아보는 기능.
+
+### 8-1. (선택) yfinance 설치 — 펀더멘털 보강
+시세·기술적 지표는 라이브러리 없이도 동작합니다. **재무(밸류·실적) 데이터**를 더 풍부하게
+쓰려면 yfinance 를 설치하세요(없어도 뉴스/웹검색 에이전트가 웹에서 보완):
+```bash
+python3 -m pip install --user yfinance
+# 설치 실패해도 시스템은 동작합니다(시세/기술적/뉴스는 그대로).
+```
+
+### 8-2. 보유 종목 등록 (텔레그램에서)
+```
+/add AAPL 10 180     ← 티커 수량 평단가
+/list                ← 보유 목록 확인
+/remove AAPL         ← 삭제
+```
+
+### 8-3. 즉시 분석 테스트
+텔레그램에 `/analyze` → 몇 분 뒤 종목별 리포트(추가매수/홀드/손절/매도) 도착.
+> 분석 실행에는 claude 가 웹검색·시세조회·서브에이전트를 쓰도록 권한이 필요합니다.
+> 기본값은 정기분석 `bypassPermissions`(자율 실행), 대화형은 `acceptEdits` + 제한된 도구
+> (`telegram_config.json` 의 `analyze_permission_mode`, `allowed_tools` 로 조정).
+
+### 8-4. 자동 스케줄 등록 (하루 3회, 한국시간)
+```bash
+cd ~/kakaostk
+PY=$(which python3)
+sed -e "s#__PYTHON3_PATH__#$PY#g" \
+    -e "s#__PROJECT_DIR__#$HOME/kakaostk#g" \
+    -e "s#__HOME__#$HOME#g" \
+    com.kakaostk.analyze.plist > ~/Library/LaunchAgents/com.kakaostk.analyze.plist
+
+launchctl bootout gui/$(id -u)/com.kakaostk.analyze 2>/dev/null
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.kakaostk.analyze.plist
+launchctl list | grep kakaostk
+```
+기본 분석 시각(한국시간): **08:00**(전일 마감 요약)·**20:30**(프리마켓)·**22:00**(개장 직전).
+시각을 바꾸려면 `com.kakaostk.analyze.plist` 의 `StartCalendarInterval` 수정 후 재등록.
+
 ---
 
 ## 운영 / 관리 명령
@@ -139,10 +179,21 @@ tail -f ~/kakaostk/bridge.log       # 로그 실시간 보기
 | 상태 확인 | 텔레그램에 `/ping` |
 | 대화 초기화 | 텔레그램에 `/reset` |
 
-## 텔레그램 특수 명령
+## 텔레그램 명령
+- `/help` — 전체 명령 도움말
+- `/list` `/add 티커 수량 평단` `/remove 티커` — 보유 종목 관리
+- `/analyze` — 지금 즉시 분석 리포트
 - `/ping` — 봇이 살아있는지 확인
 - `/reset` — 대화 맥락 초기화(새 세션 시작)
-- 그 외 모든 메시지 → Claude가 kakaostk 안에서 처리 후 답장
+- 그 외 아무 메시지 → Claude가 kakaostk 안에서 처리 후 답장 (예: "AAPL 지금 어때?")
+
+## 분석 스케줄러 관리
+| 작업 | 명령 |
+|------|------|
+| 중지 | `launchctl bootout gui/$(id -u)/com.kakaostk.analyze` |
+| 시작 | `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.kakaostk.analyze.plist` |
+| 로그 | `tail -f ~/kakaostk/analyze.log` |
+| 수동 1회 | `cd ~/kakaostk && python3 analyze.py ondemand` |
 
 ---
 

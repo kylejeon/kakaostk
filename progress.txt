@@ -47,3 +47,42 @@
 - 수동 테스트(이 맥):   python3 tg.py poll 50 / python3 tg.py send "내용"
 - 맥미니 데몬 로그:     tail -f ~/kakaostk/bridge.log
 - 봇: @Kkaostock_bot, allowed_chat_id=1050566686(kylejeon)
+
+
+[2026-06-22] 추가: 미국주식 멀티 에이전트 분석 시스템
+
+■ 요구사항
+- 보유 미국주식을 하루 3번 자동 분석 → 추가매수/홀드/손절/매도 신호를 텔레그램으로.
+- 시장+전문가의견+회계자료 종합. 에이전트들이 역할 분담.
+- 결정: 보유종목=텔레그램 등록 / 데이터=무료(야후·yfinance) / 성향=공격적
+- 분석시각(한국시간): 08:00(전일마감요약)·20:30(프리마켓)·22:00(개장직전)
+
+■ 만든 것
+- portfolio.py            : 보유종목(portfolio.json) 관리 (add/list/remove). bridge가 import.
+- market.py              : 시장데이터 수집기. 시세/기술적지표는 표준라이브러리(야후 차트 API)로
+                           의존성 0. 펀더멘털/뉴스는 yfinance 있으면 사용, 없으면 웹검색 보완.
+                           CLI: python3 market.py [all|quote|technicals|fundamentals|news] TICKER
+                           → 이 맥에서 AAPL 시세/기술적 실측 동작 확인함.
+- .claude/agents/        : 서브에이전트 4종
+    technical-analyst.md      (기술적/추세)
+    fundamental-analyst.md    (재무/밸류, 웹검색 보완)
+    news-sentiment-analyst.md (뉴스/전문가의견, WebSearch)
+    risk-strategist.md        (종합→매매판단·손절가·목표가, 공격적 성향)
+- analyze.py             : 오케스트레이터 실행기. 보유종목 읽고 claude -p 로 4에이전트 종합,
+                           세션라벨 자동(오전/프리마켓/개장직전), 결과 텔레그램 전송.
+- com.kakaostk.analyze.plist : launchd 스케줄러(하루 3회 StartCalendarInterval).
+- bridge.py              : 명령어 추가(/help /list /add /remove /analyze), 대화형에 allowed_tools 전달.
+- telegram_config.example.json : allowed_tools, analyze_permission_mode 키 추가.
+- .gitignore             : portfolio.json, analyze 로그 제외.
+- SETUP_MACMINI.md       : 8장(분석기능 설치) + 명령/스케줄 관리 추가.
+
+■ 어디까지 됐나
+- 코드 작성+문법검증+시세수집 실측 OK. 단, 이 맥엔 claude CLI/yfinance 없어 전체 파이프라인
+  (claude가 서브에이전트 구동→리포트)은 맥미니에서 실제 검증 필요.
+
+■ 다음에 할 것 (맥미니에서)
+- git pull → (선택)yfinance 설치 → /add 로 종목 등록 → /analyze 로 1회 테스트.
+- 리포트 품질/형식 보고 프롬프트 튜닝. 스케줄 plist 등록.
+- 확인필요: 서머타임에 따른 개장시각 변동(현재 plist는 여름 기준, 시각은 수동 조정 가능).
+- 확인필요: bridge의 'Bash(python3 *)' 권한 패턴이 실제로 market.py 호출을 허용하는지
+  (안 되면 analyze는 bypass라 무관, 대화형만 영향). 맥미니에서 /analyze, 대화형 둘 다 점검.

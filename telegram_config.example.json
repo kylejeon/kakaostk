@@ -5,5 +5,7 @@
   "project_dir": "/Users/사용자명/kakaostk",
   "claude_bin": "/Users/사용자명/.local/bin/claude",
   "permission_mode": "acceptEdits",
+  "allowed_tools": ["Read", "Edit", "WebSearch", "WebFetch", "Task", "Bash(python3 *)"],
+  "analyze_permission_mode": "bypassPermissions",
   "claude_session_id": null
 }

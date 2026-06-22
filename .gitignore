@@ -1,9 +1,14 @@
 # 텔레그램 봇 토큰/설정 (비밀) — 절대 커밋 금지
 telegram_config.json
 
-# 데몬 로그
+# 보유 종목 데이터 (개인 정보 — 기기별 보관)
+portfolio.json
+
+# 로그
 bridge.log
 bridge.error.log
+analyze.log
+analyze.error.log
 
 # Python
 __pycache__/
