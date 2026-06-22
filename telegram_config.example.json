@@ -1,0 +1,9 @@
+{
+  "bot_token": "여기에_BotFather_토큰_붙여넣기",
+  "allowed_chat_id": null,
+  "offset": 0,
+  "project_dir": "/Users/사용자명/kakaostk",
+  "claude_bin": "/Users/사용자명/.local/bin/claude",
+  "permission_mode": "acceptEdits",
+  "claude_session_id": null
+}

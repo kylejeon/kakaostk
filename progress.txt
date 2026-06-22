@@ -1,0 +1,49 @@
+=== kakaostk 프로젝트 진행 기록 ===
+
+[2026-06-22] 텔레그램 ↔ Claude Code 양방향 연동 구축
+
+■ 뭘 했나
+- 목표: API 비용 없이 텔레그램으로 Claude Code(이 세션)와 대화/원격조종
+- 방식: Anthropic API 미사용. 텔레그램 Bot API(무료)만 사용.
+  Claude Code 세션이 직접 메시지를 폴링해서 읽고(poll), 답장 전송(send).
+- 만든 파일:
+  - tg.py            : 텔레그램 헬퍼 (표준 라이브러리만, pip 불필요)
+                       명령: init / whoami / poll [wait] / send "msg"
+  - telegram_config.json : 봇 토큰/허용 chat_id/offset 저장 (git 미추적)
+  - .gitignore       : telegram_config.json 등 비밀 파일 제외
+- 봇: @Kkaostock_bot (이름 kakaostock)
+- 보안: allowed_chat_id = 1050566686 (kylejeon) 만 허용되도록 잠금
+- 연결 테스트: 수신("안녕") / 발신(환영 메시지) 양방향 모두 성공 확인
+
+■ 어디까지 됐나
+- 양방향 통신 완성. 자동 폴링 루프 가동 중 (ScheduleWakeup 60초 주기, 롱폴 50초).
+- 권한 결정됨: 파일 수정 자동(acceptEdits 수준), 작업 범위 = kakaostk 폴더만.
+
+[2026-06-22] 추가: 창 닫혀도 24시간 구동 (원격 맥미니 + Claude CLI 헤드리스)
+
+■ 결정 사항
+- 두뇌를 "이 세션의 Claude" → "맥미니의 Claude Code CLical(구독 인증)"로 이전.
+- 이유: 창 닫으면 이 세션은 사라져서 응답 불가. 24시간은 독립 프로세스 필요.
+- 방식: ① Claude CLI 헤드리스 + 구독 (추가 API 과금 없음). 대상: 별도 원격 맥미니.
+
+■ 추가로 만든 파일 (배포 꾸러미)
+- bridge.py                          : 24시간 데몬. 텔레그램 롱폴 → claude -p 헤드리스 → 답장.
+                                       세션 유지(--resume), 4096자 분할, /ping /reset 지원,
+                                       409충돌·타임아웃·세션재개실패 자동 처리.
+- telegram_config.example.json       : 설정 템플릿 (project_dir, claude_bin, permission_mode 추가)
+- com.kakaostk.telegram-bridge.plist : launchd LaunchAgent 템플릿 (__PLACEHOLDER__ 치환식)
+- SETUP_MACMINI.md                   : 맥미니 설치 가이드 (CLI설치→구독로그인→설정→테스트→데몬등록→절전해제)
+- .gitignore                         : bridge.log 등 추가 제외
+
+■ 어디까지 됐나
+- 코드/문서 작성 + 문법검증 완료. 이 맥에서는 claude CLI 미설치라 실제 구동 테스트는 미실시.
+- 이 Claude 세션의 자동 폴링 루프는 중단함(맥미니 데몬과 409 충돌 방지).
+
+■ 다음에 할 것 (사용자가 맥미니에서)
+- SETUP_MACMINI.md 따라 설치/구동. 핵심: 두 곳에서 동시 폴링 금지.
+- 구동 후 텔레그램 /ping 으로 확인.
+
+■ 운영 메모
+- 수동 테스트(이 맥):   python3 tg.py poll 50 / python3 tg.py send "내용"
+- 맥미니 데몬 로그:     tail -f ~/kakaostk/bridge.log
+- 봇: @Kkaostock_bot, allowed_chat_id=1050566686(kylejeon)

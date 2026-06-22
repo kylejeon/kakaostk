@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  launchd LaunchAgent 템플릿 (맥미니 24시간 구동용).
+  아래 __PLACEHOLDER__ 들을 본인 맥미니 경로로 바꾼 뒤
+  ~/Library/LaunchAgents/com.kakaostk.telegram-bridge.plist 로 복사하세요.
+  자세한 절차는 SETUP_MACMINI.md 참고.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.kakaostk.telegram-bridge</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__PYTHON3_PATH__</string>
+        <string>__PROJECT_DIR__/bridge.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__PROJECT_DIR__</string>
+
+    <!-- 부팅/로그인 시 자동 실행 -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- 죽으면 자동 재시작 -->
+    <key>KeepAlive</key>
+    <true/>
+
+    <!-- 재시작 폭주 방지: 최소 10초 간격 -->
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <!-- claude 가 PATH/홈을 찾도록 환경변수 지정 -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:__HOME__/.local/bin</string>
+        <key>HOME</key>
+        <string>__HOME__</string>
+    </dict>
+
+    <!-- 로그 -->
+    <key>StandardOutPath</key>
+    <string>__PROJECT_DIR__/bridge.log</string>
+    <key>StandardErrorPath</key>
+    <string>__PROJECT_DIR__/bridge.error.log</string>
+</dict>
+</plist>
