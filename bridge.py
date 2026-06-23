@@ -206,6 +206,18 @@ def handle_command(cfg, text):
     return True
 
 
+def with_portfolio_context(text):
+    """대화형 질문에 현재 보유 종목·평단가를 참고 정보로 앞에 덧붙인다."""
+    positions = portfolio.load().get("positions", [])
+    if not positions:
+        return text
+    holdings = ", ".join(f"{p['ticker']} {p['shares']:g}주 @${p['avg_price']:g}" for p in positions)
+    return (f"[사용자 현재 보유 종목: {holdings}]\n"
+            f"위 보유 현황을 참고해 답하라. 종목/매매 관련 질문이면 평단 대비 손익과 매매판단을 반영하고, "
+            f"보유 종목 분석을 요청하면 python3 market.py 와 WebSearch 로 실데이터를 확인한 뒤 답하라.\n\n"
+            f"질문: {text}")
+
+
 def handle_message(cfg, text):
     text = (text or "").strip()
     if not text:
@@ -217,7 +229,7 @@ def handle_message(cfg, text):
         # 알 수 없는 명령이면 아래 Claude 패스스루로 진행
 
     tg_send(cfg, "🤔 처리 중...")
-    result, new_sid = run_claude(cfg, text)
+    result, new_sid = run_claude(cfg, with_portfolio_context(text))
     if new_sid and new_sid != cfg.get("claude_session_id"):
         cfg["claude_session_id"] = new_sid
         save_config(cfg)
