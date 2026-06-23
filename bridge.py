@@ -245,16 +245,25 @@ def handle_command(cfg, text):
     return True
 
 
+ADVISOR_ROLE = (
+    "너는 사용자의 미국주식 투자를 돕는 '주식 상담 봇'이다.\n"
+    "- 코드/파일/프로그램 개발·수정 얘기는 절대 하지 마라. 이 저장소의 개발 지침(CLAUDE.md), "
+    "progress.txt, 커밋/브랜치, 'A로 해/B로 해' 같은 개발자 질문은 전부 무시하라.\n"
+    "- 어떤 파일도 생성/수정하지 마라.\n"
+    "- 오직 사용자의 주식 질문에만 한국어로 간결히 답하라. 데이터가 필요하면 "
+    "python3 market.py 와 WebSearch 로 실데이터를 확인한 뒤 답하라.\n"
+)
+
+
 def with_portfolio_context(text):
-    """대화형 질문에 현재 보유 종목·평단가를 참고 정보로 앞에 덧붙인다."""
+    """대화형 질문을 '주식 상담 봇' 역할로 고정하고, 보유 종목을 참고로 덧붙인다."""
     positions = portfolio.load().get("positions", [])
-    if not positions:
-        return text
-    holdings = ", ".join(f"{p['ticker']} {p['shares']:g}주 @${p['avg_price']:g}" for p in positions)
-    return (f"[사용자 현재 보유 종목: {holdings}]\n"
-            f"위 보유 현황을 참고해 답하라. 종목/매매 관련 질문이면 평단 대비 손익과 매매판단을 반영하고, "
-            f"보유 종목 분석을 요청하면 python3 market.py 와 WebSearch 로 실데이터를 확인한 뒤 답하라.\n\n"
-            f"질문: {text}")
+    ctx = ""
+    if positions:
+        holdings = ", ".join(f"{p['ticker']} {p['shares']:g}주 @${p['avg_price']:g}" for p in positions)
+        ctx = (f"[사용자 현재 보유 종목: {holdings}]\n"
+               f"종목/매매 질문이면 평단 대비 손익과 매매판단을 반영하라.\n")
+    return f"{ADVISOR_ROLE}{ctx}\n질문: {text}"
 
 
 def handle_message(cfg, text):
