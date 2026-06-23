@@ -84,19 +84,20 @@ def tg_send(cfg, text):
 
 
 def run_claude(cfg, prompt):
-    """claude CLI 헤드리스 실행. (result_text, session_id) 반환."""
+    """대화형(주식 상담) claude 헤드리스 실행. 파일 수정 불가 — 데이터 조회만 허용."""
     claude_bin = cfg.get("claude_bin", "claude")
     project_dir = cfg.get("project_dir", BASE_DIR)
-    permission_mode = cfg.get("permission_mode", "acceptEdits")
     session_id = cfg.get("claude_session_id")
 
+    # 대화형 봇은 절대 파일을 못 고치게 한다(Edit/Write/Task 미허용 + 비-acceptEdits 모드).
+    # 데이터 조회용 도구만 허용: 시세(python3 market.py)·웹검색·읽기.
+    permission_mode = cfg.get("chat_permission_mode", "default")
+    allowed = cfg.get("chat_allowed_tools",
+                      ["Read", "WebSearch", "WebFetch", "Bash(python3:*)"])
     cmd = [claude_bin, "-p", prompt,
            "--permission-mode", permission_mode,
-           "--output-format", "json"]
-    # 대화형 질문에서도 데이터 수집(시세/웹검색/서브에이전트)이 가능하도록 허용 도구 전달
-    allowed = cfg.get("allowed_tools")
-    if allowed:
-        cmd += ["--allowedTools", ",".join(allowed)]
+           "--output-format", "json",
+           "--allowedTools", ",".join(allowed)]
     if session_id:
         cmd += ["--resume", session_id]
 
