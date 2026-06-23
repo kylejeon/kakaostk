@@ -9,6 +9,7 @@ monitor_state.json
 # 로그
 bridge.log
 bridge.error.log
+bridge.manual.log
 analyze.log
 analyze.error.log
 monitor.log
