@@ -1,8 +1,9 @@
 # 텔레그램 봇 토큰/설정 (비밀) — 절대 커밋 금지
 telegram_config.json
 
-# 보유 종목 데이터 (개인 정보 — 기기별 보관)
+# 보유 종목/관심종목 데이터 (개인 정보 — 기기별 보관)
 portfolio.json
+watchlist.json
 monitor_state.json
 
 # 로그

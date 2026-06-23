@@ -19,6 +19,7 @@ from datetime import datetime, timedelta, timezone
 import bridge
 import market
 import portfolio
+import watchlist
 
 KST = timezone(timedelta(hours=9))
 STATE_PATH = os.path.join(bridge.BASE_DIR, "monitor_state.json")
@@ -27,6 +28,7 @@ DEFAULT_THRESHOLDS = {
     "intraday_drop_pct": -7.0,
     "intraday_spike_pct": 10.0,
     "total_loss_pct": -15.0,
+    "watchlist_near_pct": 2.0,  # 목표 진입가 +N% 이내로 내려오면 알림
 }
 
 
@@ -57,7 +59,8 @@ def main():
     if not in_us_market_window():
         return
     positions = portfolio.load().get("positions", [])
-    if not positions:
+    watch = watchlist.items()
+    if not positions and not watch:
         return
 
     cfg = bridge.load_config()
@@ -102,10 +105,36 @@ def main():
         st["fired"] = sorted(fired)
         state[ticker] = st
 
-    # 더 이상 보유하지 않는 종목 상태 정리
-    held = {p["ticker"] for p in positions}
+    # 관심종목: 목표 진입가 근접 시 알림
+    near_pct = th["watchlist_near_pct"]
+    for w in watch:
+        entry = w.get("entry")
+        if not entry:
+            continue
+        q = market.quote(w["ticker"])
+        price = q.get("price")
+        if price is None:
+            continue
+        key = "wl:" + w["ticker"]
+        st = state.get(key, {})
+        if st.get("date") != today:
+            st = {"date": today, "fired": []}
+        fired = set(st.get("fired", []))
+        if price <= entry * (1 + near_pct / 100) and "entry" not in fired:
+            gap = (price - entry) / entry * 100
+            note = f"\n{w['note']}" if w.get("note") else ""
+            bridge.tg_send(cfg,
+                           f"🎯 진입가 근접 [{w['ticker']}] ${price}\n"
+                           f"목표 진입 ${entry:g} ({gap:+.1f}%){note}\n→ 매수 검토 (상세는 대화로 질문)")
+            bridge.log(f"진입가 근접 알림: {w['ticker']} {price} vs {entry}")
+            fired.add("entry")
+        st["fired"] = sorted(fired)
+        state[key] = st
+
+    # 더 이상 보유/관심 대상이 아닌 종목 상태 정리
+    valid = {p["ticker"] for p in positions} | {"wl:" + w["ticker"] for w in watch}
     for t in list(state.keys()):
-        if t not in held:
+        if t not in valid:
             del state[t]
     save_state(state)
 

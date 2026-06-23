@@ -27,6 +27,7 @@ import urllib.parse
 import urllib.request
 
 import portfolio
+import watchlist
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(BASE_DIR, "telegram_config.json")
@@ -141,6 +142,11 @@ HELP_TEXT = """🤖 사용법
 (자동: 하루 3회 — 한국 오전 / 프리마켓 / 개장 직전)
 /discover  저평가·투자가치 있는 신규 종목 발굴 (보유 종목은 제외)
 
+👀 관심종목 (진입가 근접 시 자동 알림)
+/watchlist  관심종목 + 현재가 vs 목표가 보기
+/watch 티커 [목표가] [메모]   예: /watch ANIP 80 저평가 분할매수
+/unwatch 티커                 예: /unwatch ANIP
+
 ⚙️ 기타
 /ping   살아있는지 확인
 /reset  대화 맥락 초기화
@@ -207,6 +213,28 @@ def handle_command(cfg, text):
         py = sys.executable or "python3"
         subprocess.Popen([py, os.path.join(BASE_DIR, "discover.py")],
                          cwd=cfg.get("project_dir", BASE_DIR))
+    elif cmd in ("/watchlist", "/wl"):
+        tg_send(cfg, watchlist.format_list(live=True))
+    elif cmd == "/watch":
+        if len(parts) < 2:
+            tg_send(cfg, "형식: /watch 티커 [목표가] [메모]\n예: /watch ANIP 80 저평가 분할매수")
+        else:
+            entry, note_start = None, 2
+            if len(parts) >= 3:
+                try:
+                    entry = float(parts[2])
+                    note_start = 3
+                except ValueError:
+                    entry = None
+            note = " ".join(parts[note_start:])
+            from datetime import datetime, timedelta, timezone
+            today = datetime.now(timezone(timedelta(hours=9))).strftime("%Y-%m-%d")
+            tg_send(cfg, watchlist.add(parts[1], entry, note, today))
+    elif cmd == "/unwatch":
+        if len(parts) < 2:
+            tg_send(cfg, "형식: /unwatch 티커\n예: /unwatch ANIP")
+        else:
+            tg_send(cfg, watchlist.remove(parts[1]))
     else:
         return False
     return True

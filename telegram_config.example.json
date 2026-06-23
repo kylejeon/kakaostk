@@ -10,7 +10,8 @@
   "alert_thresholds": {
     "intraday_drop_pct": -7.0,
     "intraday_spike_pct": 10.0,
-    "total_loss_pct": -15.0
+    "total_loss_pct": -15.0,
+    "watchlist_near_pct": 2.0
   },
   "claude_session_id": null
 }

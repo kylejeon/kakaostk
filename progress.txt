@@ -154,3 +154,30 @@
 - git pull + bridge 데몬 재시작 → 텔레그램 /discover 테스트.
 - 발굴 결과 보고 screener 기준(범위/스타일) 프롬프트 튜닝.
 - (선택) 나중에 주1회 자동 발굴 원하면 analyze처럼 스케줄 plist 추가 가능.
+
+
+[2026-06-23] /discover 첫 실행 성공 + 관심종목(워치리스트) 기능 추가
+
+■ /discover 결과
+- 맥미니에서 정상 동작. 5종목(ANIP/TVTX/EYE/CAVA/ADMA) 가치+성장 혼합·중소형, 보유 제외 정상.
+- 펀더/기술/뉴스 검증 충실(공매도·소송 리스크까지 식별). 파일 수정 금지 가드 정상.
+- 사용자 피드백: 섹터(헬스케어) 쏠림 있으나 "지금 그대로 좋음" → screener 변경 안 함.
+
+■ 추가: 관심종목(워치리스트)
+- 결정: 발굴/점찍은 종목을 워치리스트에 담고, 진입가 근접 시 자동 알림.
+- watchlist.py            : watchlist.json 관리(add/remove/list). 목표 진입가(entry)·메모 저장.
+                           format_list(live=True)는 market.quote로 현재가 vs 목표 격차 표시.
+- bridge.py              : /watchlist(/wl), /watch 티커 [목표가] [메모], /unwatch 명령 추가.
+- monitor.py             : 보유종목 감시에 더해 관심종목도 점검. 현재가 ≤ 목표가×(1+watchlist_near_pct%)
+                           이면 🎯 진입가 근접 알림. 상태키 'wl:티커'로 분리, 하루 1회 스팸방지.
+- telegram_config.example.json: alert_thresholds.watchlist_near_pct(기본 2.0) 추가.
+- .gitignore             : watchlist.json 제외.
+- 테스트: 이 맥에서 add/list(현재가 조회)/remove 동작 확인(ANIP $80.58 vs 목표 $80 = +0.7%).
+
+■ 어디까지
+- 코드/문법/CLI 검증 완료. 맥미니에서 git pull + bridge 재시작 후 /watch 테스트 필요.
+- monitor 는 이미 등록돼 있으면 watchlist 점검이 자동 포함됨(재등록 불필요, 단 코드 git pull은 필요).
+
+■ 다음에 할 것 (맥미니)
+- git pull → bridge 데몬 재시작 → /watch ANIP 80 ... 등록 → /watchlist 확인.
+- monitor 가 이미 돌고 있으면 다음 실행부터 진입가 알림 반영(monitor.py도 git pull로 갱신됨).
