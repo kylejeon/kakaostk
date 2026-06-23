@@ -207,3 +207,28 @@
 ■ 다음에 할 것
 - git pull → pkill -f bridge.py → nohup 재기동 → /watchlist 로 RELY 현재가 vs $19.8 확인.
 - (선택) launchd EIO 근본해결: plist DOCTYPE 추가/SSH 여부/도메인 점검 후 재시도.
+
+
+[2026-06-23] 다중 폴러/개발자모드 혼선 정리
+
+■ 증상
+- 텔레그램에 두 종류 응답이 섞임: (1)우리 봇의 깔끔한 명령응답, (2)마크다운으로 코드/개발
+  얘기하며 'A로 해/B로 해' 묻는 응답. + 맥미니 로그에 409 지속.
+
+■ 원인 2가지
+1) 다중 폴러: 개발 Mac(yhjeon.local)에 남아있던 telegram_config.json + bridge.py가 production
+   봇을 같이 폴링 → 409, 메시지 가로채기. (맥미니=yonghyeog-ui-Macmini 와 별개 기계 확인)
+2) 개발자 모드 변신: 대화형 메시지 처리 시 claude -p 가 저장소 안에서 돌며 이 프로젝트
+   CLAUDE.md(개발 지침)를 읽고 코딩 에이전트처럼 행동. 보유종목 비어 raw 경로로 빠져 더 심했음.
+   ('daily_move', 'monitor.py 감시코드 없음', '12:54 되돌림'은 그 dev-모드 claude 얘기 —
+    우리 실제 배포 코드(acf0009+)는 monitor 워치리스트 감시 이미 포함).
+
+■ 조치
+- 개발 Mac: telegram_config.json → .DISABLED_dev 로 비활성화 + bridge.py kill. 여기선 폴링 불가.
+- bridge.py: with_portfolio_context 를 ADVISOR_ROLE 로 고정 → 대화형 봇이 '주식 상담 봇'
+  으로만 답하고 코드/파일/개발 얘기·파일수정 금지. (커밋 e4fb4a7)
+
+■ 다음에 할 것 (맥미니)
+- git pull → pkill -f bridge.py → nohup 재기동 → 로그에 409 사라졌는지 확인(단독 폴러 검증).
+- 대화형으로 '지금 시장 어때?' 보내 주식답변 나오는지(개발자 A/B 안 나오는지) 확인.
+- 만약 409가 계속이면 제3의 폴러(다른 기계/세션)가 또 있는 것 → 추가 추적 필요.
