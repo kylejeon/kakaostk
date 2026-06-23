@@ -139,6 +139,7 @@ HELP_TEXT = """🤖 사용법
 🔎 분석
 /analyze  지금 즉시 보유 종목 분석 리포트 받기
 (자동: 하루 3회 — 한국 오전 / 프리마켓 / 개장 직전)
+/discover  저평가·투자가치 있는 신규 종목 발굴 (보유 종목은 제외)
 
 ⚙️ 기타
 /ping   살아있는지 확인
@@ -201,6 +202,11 @@ def handle_command(cfg, text):
             py = sys.executable or "python3"
             subprocess.Popen([py, os.path.join(BASE_DIR, "analyze.py"), "ondemand"],
                              cwd=cfg.get("project_dir", BASE_DIR))
+    elif cmd == "/discover":
+        tg_send(cfg, "🔎 신규 종목을 발굴 중이에요. 잠시 후(최대 몇 분) 리포트가 도착합니다.")
+        py = sys.executable or "python3"
+        subprocess.Popen([py, os.path.join(BASE_DIR, "discover.py")],
+                         cwd=cfg.get("project_dir", BASE_DIR))
     else:
         return False
     return True
