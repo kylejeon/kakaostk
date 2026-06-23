@@ -189,13 +189,17 @@ total_loss_pct)로 조정. 같은 종목·같은 조건은 하루 1번만 알립
 ## 운영 / 관리 명령
 | 작업 | 명령 |
 |------|------|
-| 중지 | `launchctl unload ~/Library/LaunchAgents/com.kakaostk.telegram-bridge.plist` |
-| 시작 | `launchctl load ~/Library/LaunchAgents/com.kakaostk.telegram-bridge.plist` |
-| 재시작 | unload 후 load |
+| **재시작**(코드 갱신 후) | `launchctl kickstart -k gui/$(id -u)/com.kakaostk.telegram-bridge` |
+| 시작(미등록 시) | `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.kakaostk.telegram-bridge.plist` |
+| 중지 | `launchctl bootout gui/$(id -u)/com.kakaostk.telegram-bridge` |
 | 로그 보기 | `tail -f ~/kakaostk/bridge.log` |
 | 에러 로그 | `tail -f ~/kakaostk/bridge.error.log` |
 | 상태 확인 | 텔레그램에 `/ping` |
 | 대화 초기화 | 텔레그램에 `/reset` |
+
+> 💡 **재시작은 `kickstart -k` 한 줄**이 가장 안정적이에요. 이미 로드된 서비스에 `bootstrap`을
+> 다시 하면 `Input/output error`가 납니다 — 그땐 `kickstart -k`로 재시작하세요.
+> (`git pull`로 .py 코드만 바뀐 경우, plist 재등록 없이 `kickstart -k`만 하면 새 코드가 반영됩니다.)
 
 ## 텔레그램 명령
 - `/help` — 전체 명령 도움말

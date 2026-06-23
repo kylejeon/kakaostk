@@ -25,9 +25,14 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import datetime, timedelta, timezone
 
 import portfolio
 import watchlist
+
+KST = timezone(timedelta(hours=9))
+ANALYZE_SLOTS = [(8, 0), (20, 30), (22, 0)]  # 정기 분석(한국시간)
+MONITOR_INTERVAL = 600  # 감시기 실행 주기(초)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(BASE_DIR, "telegram_config.json")
@@ -270,11 +275,37 @@ def handle_message(cfg, text):
     tg_send(cfg, result)
 
 
+def spawn_script(cfg, script, *args):
+    py = sys.executable or "python3"
+    cmd = [py, os.path.join(BASE_DIR, script), *args]
+    subprocess.Popen(cmd, cwd=cfg.get("project_dir", BASE_DIR))
+
+
+def run_schedulers(cfg, sched):
+    """봇 폴링 루프가 직접 감시기/정기분석을 구동한다(launchd 의존 제거)."""
+    # 감시기: 일정 주기마다 (긴급 신호 + 관심종목 진입가 알림)
+    interval = cfg.get("monitor_interval_sec", MONITOR_INTERVAL)
+    if time.monotonic() - sched["last_monitor"] >= interval:
+        sched["last_monitor"] = time.monotonic()
+        spawn_script(cfg, "monitor.py")
+    # 정기 분석: 한국시간 지정 시각(±15분 창, 하루 1회)
+    kst = datetime.now(KST)
+    today = kst.strftime("%Y-%m-%d")
+    now_min = kst.hour * 60 + kst.minute
+    for (h, m) in ANALYZE_SLOTS:
+        key = f"{h:02d}{m:02d}"
+        if 0 <= now_min - (h * 60 + m) < 15 and sched["analyze_done"].get(key) != today:
+            sched["analyze_done"][key] = today
+            spawn_script(cfg, "analyze.py")
+            log(f"정기 분석 실행 — {h:02d}:{m:02d} KST")
+
+
 def main():
     cfg = load_config()
     if not cfg.get("bot_token"):
         sys.exit("ERROR: telegram_config.json 에 bot_token 이 없습니다.")
-    log("브리지 시작. 텔레그램 롱폴링 대기 중...")
+    log("브리지 시작. 텔레그램 롱폴링 대기 중... (감시기/정기분석 자체 스케줄 가동)")
+    sched = {"last_monitor": 0.0, "analyze_done": {}}
 
     while True:
         try:
@@ -320,6 +351,9 @@ def main():
         if updates:
             cfg["offset"] = max_uid + 1
             save_config(cfg)
+
+        # 봇이 직접 감시기/정기분석을 구동(launchd 불필요)
+        run_schedulers(cfg, sched)
 
 
 if __name__ == "__main__":
